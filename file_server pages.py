@@ -44,9 +44,20 @@ class FileServerHandler(BaseHTTPRequestHandler):
                 with open(page_path, "rb") as f:
                     self.wfile.write(f.read())
             else:
-                self.send_response(404)
-                self.end_headers()
-                self.wfile.write(b"Page not found")
+                # Serve uploaded files for download
+                file_path = os.path.join(UPLOAD_DIRECTORY, self.path[1:])
+                if os.path.exists(file_path):
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/octet-stream")
+                    self.send_header("Content-Disposition", f"attachment; filename={os.path.basename(file_path)}")
+                    self.end_headers()
+
+                    with open(file_path, "rb") as f:
+                        self.wfile.write(f.read())
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+                    self.wfile.write(b"File not found")
 
     def do_POST(self):
         if self.path == "/":
@@ -69,10 +80,10 @@ class FileServerHandler(BaseHTTPRequestHandler):
                         uploaded_files.append((unique_filename, link))
                 
                 if uploaded_files:
-                    # Generate and write the HTML page for the uploaded files
-                    page_content = self.generate_files_page(uploaded_files)
                     page_link = generate_random_link(LINK_LENGTH)
                     page_path = os.path.join(UPLOAD_DIRECTORY, page_link + ".html")
+                    
+                    page_content = self.generate_files_page(uploaded_files)
                     with open(page_path, "w") as page_file:
                         page_file.write(page_content)
                     
@@ -89,12 +100,13 @@ class FileServerHandler(BaseHTTPRequestHandler):
         <h1>Uploaded Files</h1>
         <ul>
         """
-        for filename, _ in uploaded_files:
-            page_content += f"<li><a href=/file/{filename}>{filename}</a></li>"
+        for filename, link in uploaded_files:
+            page_content += f'<li><a href="/{filename}" download="{filename}">{filename}</a></li>'
         page_content += """
-        </ul>
-        </body>
-        </html>
+         </ul>
+         <a href="/">Upload your own files here</a>  <!-- Add the button/link -->
+         </body>
+         </html>
         """
         return page_content
 
