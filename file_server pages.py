@@ -25,10 +25,20 @@ class FileServerHandler(BaseHTTPRequestHandler):
             <head><title>File Server</title></head>
             <body>
             <h1>Upload Files</h1>
-            <form enctype="multipart/form-data" method="post">
+            <form enctype="multipart/form-data" method="post" onsubmit="return checkFiles()">
             <input type="file" name="file" multiple>
             <input type="submit" value="Upload">
             </form>
+            <script>
+            function checkFiles() {
+                var fileInput = document.querySelector('input[type="file"]');
+                if (fileInput.files.length === 0) {
+                    alert("Please select file(s) to upload.");
+                    return false;
+                }
+                return true;
+            }
+            </script>
             </body>
             </html>
             """
